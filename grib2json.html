@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script src="libgrib2.js" defer="defer"></script>
+<title>GRIB2</title>
+
+</head>
+<body>
+
+<style>
+  #byte_content {
+    margin: 5px 0;
+    //max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  #byte_range { margin-top: 5px; }
+</style>
+
+GRIB2ファイルを選択してください
+<input type="file" id="files" name="file" /> 
+<span class="readBytesButtons">
+  <button>実行</button>
+</span>
+<div id="byte_range"></div>
+<!--
+<div id="byte_content"></div>
+-->
+<textarea id="byte_content" rows="30" cols="100"></textarea><br />
+
+
+<script>
+  function readBlob(opt_startByte, opt_stopByte) {
+
+    var files = document.getElementById('files').files;
+    if (!files.length) {
+      alert('Please select a file!');
+      return;
+    }
+
+    var file = files[0];
+	var obj = document.getElementById('byte_content');
+	result = grib2_sub(file,obj);
+  }
+  
+  document.querySelector('.readBytesButtons').addEventListener('click', function(evt) {
+		//alert("button clicked!");
+    if (evt.target.tagName.toLowerCase() == 'button') {
+		var startByte = 1;
+		var endByte = 4;
+      readBlob(startByte, endByte);
+    }
+  }, false);
+</script>
+
+</html>
