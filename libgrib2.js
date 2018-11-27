@@ -74,8 +74,105 @@ function getUint64( buf, start, littleEndian)
 // Section 4-7のループ
 // 終端に達した場合falseを返す
 // ループ途中ならtrueを返す。
-function loop47( json, buf, count)
+function loop47( json, buf, index, s4_pointer)
 {
+	json.s47list[index] = {};
+
+	//-------------------------------------
+	// Section 4: Product Definition Section、プロダクト定義節
+	//-------------------------------------
+	var s4 = s4_pointer;
+	console.log("s4="+s4);
+	json.s47list[index].s4 = {}; // Section 4 の初期化
+	json.s47list[index].s4.len = getUint32( buf, s4+0, false);
+	json.s47list[index].s4.number_of_section = buf[s4+4];
+
+	json.s47list[index].s4.number_of_coord_after_tamplate = getUint16( buf, s4+5, false);
+	json.s47list[index].s4.template_number = getUint16( buf, s4+7, false); // =0: ある時刻のある水平面における予報
+
+
+	// debug
+	if ( json.s47list[index].s4.template_number != 0 ) {
+		console.log("json.s47list[index].s4.template_number="+json.s47list[index].s4.template_number);
+		throw new Error('終了します');
+	}
+
+
+
+	// Template 4.0
+	json.s47list[index].s4.temp40 = {};
+	json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+	json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+
+	json.s47list[index].s4.temp40.type_of_generating_process = buf[s4+11]; // =2: 予報
+
+	json.s47list[index].s4.temp40.background_generating_process_id = buf[s4+12]; // =31: メソ数値予報
+	json.s47list[index].s4.temp40.anal_or_frcst_id = buf[s4+13]; // =255: 
+
+	json.s47list[index].s4.temp40.hour_of_obs = getUint16( buf, s4+14, false); // =0:
+	json.s47list[index].s4.temp40.min_of_obs = buf[s4+16]; // =50:
+	json.s47list[index].s4.temp40.id_of_unit_of_time = buf[s4+17]; // =1: hour
+	json.s47list[index].s4.temp40.fcst_time = getUint32( buf, s4+18, false); // =36: 
+
+	json.s47list[index].s4.temp40.type_of_first_fixed_surface = buf[s4+22]; // =100: 
+	json.s47list[index].s4.temp40.scale_factor_of_first_fixed_surface = buf[s4+23]; // =130: 130は二進数で10000010、GRIB2では-2を意味する
+	json.s47list[index].s4.temp40.scaled_value_of_first_fixed_surface = getUint32( buf, s4+24, false); // =1000: 
+	json.s47list[index].s4.temp40.type_of_second_fixed_surface = buf[s4+28];
+	json.s47list[index].s4.temp40.scale_factor_of_second_fixed_surface = buf[s4+29];
+	json.s47list[index].s4.temp40.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
+
+
+
+	//-------------------------------------
+	// Section 5: Data Representation Section、資料表現節
+	//-------------------------------------
+	var s5 = s4 + json.s47list[index].s4.len;
+	console.log("s5="+s5);
+	json.s47list[index].s5 = {}; // Section 5 の初期化
+	json.s47list[index].s5.len = getUint32( buf, s5+0, false);
+	json.s47list[index].s5.number_of_section = buf[s5+4];
+
+	json.s47list[index].s5.number_of_data_points = getUint32( buf, s5+5, false);
+	json.s47list[index].s5.template_number = getUint16( buf, s5+9, false); // =0: 
+
+
+	// Template 5.0
+	json.s47list[index].s5.temp50 = {};
+	json.s47list[index].s5.temp50.ref_value = getUint32( buf, s5+11, false); // R
+	json.s47list[index].s5.temp50.bin_scale_factor = getUint16( buf, s5+15, false); // E
+	json.s47list[index].s5.temp50.dec_scale_factor = getUint16( buf, s5+17, false); // D
+	json.s47list[index].s5.temp50.number_of_bits = buf[s5+19];
+	json.s47list[index].s5.temp50.type_of_original_field_value = buf[s5+20];
+
+
+
+
+	//-------------------------------------
+	// Section 6: Bit-Map Section、ビットマップ節
+	//-------------------------------------
+	var s6 = s5 + json.s47list[index].s5.len;
+	console.log("s6="+s6);
+	json.s47list[index].s6 = {}; // Section 6 の初期化
+	json.s47list[index].s6.len = getUint32( buf, s6+0, false);
+	json.s47list[index].s6.number_of_section = buf[s6+4];
+
+	json.s47list[index].s6.bitmap_indicator = buf[s6+5]; // =255: ビットマップを使用せず
+
+
+
+
+	//-------------------------------------
+	// Section 7: Data Section、データ節
+	//-------------------------------------
+	var s7 = s6 + json.s47list[index].s6.len;
+	console.log("s7="+s7);
+	json.s47list[index].s7 = {}; // Section 7 の初期化
+	json.s47list[index].s7.len = getUint32( buf, s7+0, false); // =91465
+	json.s47list[index].s7.number_of_section = buf[s7+4];
+
+
+	return s7 + json.s47list[index].s7.len; // 次の読み込み開始位置を返す。
+
 }
 
 /*JSONの一例
@@ -249,93 +346,31 @@ function parse( json, buf)
 
 
 	// Section4から7はデータ分繰り返す。
-	var count = 0; // ループ回数
-	while( loop47( json, buf, count) == true ) {
-		count ++;
-	}
-
-	//-------------------------------------
-	// Section 4: Product Definition Section、プロダクト定義節
-	//-------------------------------------
 	var s4 = s3 + json.s3.len;
-	console.log("s4="+s4);
-	json.s4 = {}; // Section 4 の初期化
-	json.s4.len = getUint32( buf, s4+0, false);
-	json.s4.number_of_section = buf[s4+4];
+	var index = 0; // ループindex
+	var next_pointer = s4;
 
-	json.s4.number_of_coord_after_tamplate = getUint16( buf, s4+5, false);
-	json.s4.template_number = getUint16( buf, s4+7, false); // =0: ある時刻のある水平面における予報
+	json.s47list = [];
+	// json.s47list[0]: 1ループ目
+	// json.s47list[1]: 2ループ目
+	while( next_pointer = loop47( json, buf, index, next_pointer) ) {
+		console.log("next_pointer="+next_pointer);
+		index ++;
 
-	// Template 4.0
-	json.s4.temp40 = {};
-	json.s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
-	json.s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+		// 終端チェック
+		var str = String.fromCharCode( buf[next_pointer+0],buf[next_pointer+1],buf[next_pointer+2],buf[next_pointer+3]);
+		if ( str == "7777" ) {
+			break;
+		}
 
-	json.s4.temp40.type_of_generating_process = buf[s4+11]; // =2: 予報
-
-	json.s4.temp40.background_generating_process_id = buf[s4+12]; // =31: メソ数値予報
-	json.s4.temp40.anal_or_frcst_id = buf[s4+13]; // =255: 
-
-	json.s4.temp40.hour_of_obs = getUint16( buf, s4+14, false); // =0:
-	json.s4.temp40.min_of_obs = buf[s4+16]; // =50:
-	json.s4.temp40.id_of_unit_of_time = buf[s4+17]; // =1: hour
-	json.s4.temp40.fcst_time = getUint32( buf, s4+18, false); // =36: 
-
-	json.s4.temp40.type_of_first_fixed_surface = buf[s4+22]; // =100: 
-	json.s4.temp40.scale_factor_of_first_fixed_surface = buf[s4+23]; // =130: 130は二進数で10000010、GRIB2では-2を意味する
-	json.s4.temp40.scaled_value_of_first_fixed_surface = getUint32( buf, s4+24, false); // =1000: 
-	json.s4.temp40.type_of_second_fixed_surface = buf[s4+28];
-	json.s4.temp40.scale_factor_of_second_fixed_surface = buf[s4+29];
-	json.s4.temp40.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
-
-
-
-	//-------------------------------------
-	// Section 5: Data Representation Section、資料表現節
-	//-------------------------------------
-	var s5 = s4 + json.s4.len;
-	console.log("s5="+s5);
-	json.s5 = {}; // Section 5 の初期化
-	json.s5.len = getUint32( buf, s5+0, false);
-	json.s5.number_of_section = buf[s5+4];
-
-	json.s5.number_of_data_points = getUint32( buf, s5+5, false);
-	json.s5.template_number = getUint16( buf, s5+9, false); // =0: 
-
-
-	// Template 5.0
-	json.s5.temp50 = {};
-	json.s5.temp50.ref_value = getUint32( buf, s5+11, false); // R
-	json.s5.temp50.bin_scale_factor = getUint16( buf, s5+15, false); // E
-	json.s5.temp50.dec_scale_factor = getUint16( buf, s5+17, false); // D
-	json.s5.temp50.number_of_bits = buf[s5+19];
-	json.s5.temp50.type_of_original_field_value = buf[s5+20];
-
-
-
-
-	//-------------------------------------
-	// Section 6: Bit-Map Section、ビットマップ節
-	//-------------------------------------
-	var s6 = s5 + json.s5.len;
-	console.log("s6="+s6);
-	json.s6 = {}; // Section 6 の初期化
-	json.s6.len = getUint32( buf, s6+0, false);
-	json.s6.number_of_section = buf[s6+4];
-
-	json.s6.bitmap_indicator = buf[s6+5]; // =255: ビットマップを使用せず
-
-
-
-
-	//-------------------------------------
-	// Section 7: Data Section、データ節
-	//-------------------------------------
-	var s7 = s6 + json.s6.len;
-	console.log("s7="+s7);
-	json.s7 = {}; // Section 7 の初期化
-	json.s7.len = getUint32( buf, s7+0, false); // =91465
-	json.s7.number_of_section = buf[s7+4];
+		/*
+		// debug用	
+		if ( index == 2 ) {
+			break;
+		}
+		*/
+	}
+	console.log("index="+index);
 
 
 	// Template 7.0
@@ -349,7 +384,7 @@ function parse( json, buf)
 	//-------------------------------------
 	// Section 8: End Section
 	//-------------------------------------
-	var s8 = s7 + json.s7.len;
+	var s8 = next_pointer;
 	console.log("s8="+s8);
 	json.s8 = {}; // Section 8 の初期化
 	json.s8.end = String.fromCharCode( buf[s8+0],buf[s8+1],buf[s8+2],buf[s8+3]);
