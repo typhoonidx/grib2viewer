@@ -2,17 +2,23 @@
 libgrib2.js - GRIB2のライブラリ
 Copyright 2018, 台風スレ@5ch
 LICENSE: 台風スレ住人であれば誰でも自由に利用ですます。（学術利用）
+作成者：風太郎
 *****************************************************/
 
 //参考
 //https://www.html5rocks.com/ja/tutorials/file/dndfiles/
 // 解析結果はJSONに入れるか？
 //MSMのGRIB2フォーマット仕様書
-//http://www.data.jma.go.jp/add/suishin/jyouhou/pdf/500.pdf
+//https://www.data.jma.go.jp/add/suishin/jyouhou/pdf/500.pdf
+//https://www.data.jma.go.jp/add/suishin/jyouhou/pdf/205.pdf
 //JSONについて
 //https://dev.classmethod.jp/etc/concrete-example-of-json/
 //GRIB2フォーマット仕様書（英語）
 //http://www.wmo.int/pages/prog/www/WMOCodes/Guides/GRIB/GRIB2_062006.pdf
+// Template
+//https://www.wmo.int/pages/prog/www/WMOCodes/WMO306_vI2/LatestVERSION/WMO306_vI2_GRIB2_Template_en.pdf
+// Code Table
+//http://www.nco.ncep.noaa.gov/pmb/docs/grib2/grib2_doc/
 //サンプルのGRIB2ファイル
 //http://www.jmbsc.or.jp/jp/online/c-onlineGsample.html#sample399
 
@@ -63,6 +69,15 @@ function getUint64( buf, start, littleEndian)
 
 	return value;
 }
+
+
+// Section 4-7のループ
+// 終端に達した場合falseを返す
+// ループ途中ならtrueを返す。
+function loop47( json, buf, count)
+{
+}
+
 /*JSONの一例
 [
   {
@@ -104,9 +119,12 @@ function parse( json, buf)
 	//-------------------------------------
 	// Section 0: Indicator Section
 	//-------------------------------------
-	json.grib_magicword = String.fromCharCode( buf[0],buf[1],buf[2],buf[3]);
-	json.discipline = buf[6]; // =0: Meteorological products
-	json.grib_edition_number = buf[7]; // ==2
+	var s0 = 0;
+
+	json.s0 = {};
+	json.s0.grib_magicword = String.fromCharCode( buf[0],buf[1],buf[2],buf[3]);
+	json.s0.discipline = buf[6]; // =0: Meteorological products
+	json.s0.grib_edition_number = buf[7]; // ==2
 
 /*
 	// 9-16バイト目: GRIBデータの長さ
@@ -133,9 +151,8 @@ function parse( json, buf)
 	var value= dv.getUint64(0, false);
 	console.log(value);
 */
-	var value = getUint64( buf, 8, false);
-	console.log(value);
-	json.len = value;
+
+	json.s0.len = getUint64( buf, s0+8, false);
 
 
 
@@ -144,6 +161,7 @@ function parse( json, buf)
 	//-------------------------------------
 	var p = 16; // 現在のファイルポインタ
 	var s1 = p; // Section 1の開始ファイルポインタ
+	console.log("s1="+s1);
 	json.s1 = {}; // Section 1 の初期化
 
 	json.s1.len = getUint32( buf, s1+0, false); // Section 1 の長さ
@@ -159,6 +177,182 @@ function parse( json, buf)
 	json.s1.master_table_version = buf[s1+9]; // =2: 2003
 	json.s1.local_table_version = buf[s1+10]; // =1: 
 	json.s1.sig_of_reftime = buf[s1+11]; // =0: Analysis、観測値, =1:予想開始
+
+	json.s1.year = getUint16( buf, s1+12, false);
+	json.s1.month = buf[s1+14];
+	json.s1.day = buf[s1+15];
+	json.s1.hour = buf[s1+16];
+	json.s1.minute = buf[s1+17];
+	json.s1.second = buf[s1+18];
+
+	json.s1.production_status = buf[s1+19]; // =0: Operational products
+	json.s1.type = buf[s1+20]; // =1: Forecast products
+
+
+
+	
+	//-------------------------------------
+	// Section 2: Local Use Section
+	//-------------------------------------
+	var s2 = s1 + json.s1.len;
+	console.log("s2="+s2);
+	json.s2 = {}; // Section 2 の初期化
+	// 〇Section2は、まるごとない場合がある。
+	if ( buf[s2+4] == 2 ) { // Section番号を見て2節か3節か判断する
+		json.s2.len = getUint32( buf, s2+0, false);
+		json.s2.number_of_section = buf[s2+4];
+	} else {
+		json.s2.len = 0;
+	}
+
+
+
+	//-------------------------------------
+	// Section 3: Grid Definition Section、格子系定義節
+	//-------------------------------------
+	var s3 = s2 + json.s2.len;
+	console.log("s3="+s3);
+	json.s3 = {}; // Section 3 の初期化
+	json.s3.len = getUint32( buf, s3+0, false);
+	json.s3.number_of_section = buf[s3+4];
+
+	json.s3.src_of_griddef = buf[s3+5];
+	json.s3.num_of_data_points = getUint32( buf, s3+6, false); // =60973: 253×241
+	json.s3.octet11 = buf[s3+10];
+	json.s3.octet12 = buf[s3+11];
+	json.s3.template_number = getUint16( buf, s3+12, false);
+
+	// Grid Definition Template
+	json.s3.griddef = {};
+	json.s3.griddef.shape_of_earth = buf[s3+14]; // =6: 半径6,371kmの球体と仮定した地球	
+
+	// この間はデータ無し
+	
+	json.s3.griddef.number_of_parallel = getUint32( buf, s3+30, false); // 緯線に沿った格子点数
+	json.s3.griddef.number_of_meridian = getUint32( buf, s3+34, false); // 経線に沿った格子点数
+
+	json.s3.griddef.basic_angle = getUint32( buf, s3+38, false);
+	json.s3.griddef.sub_of_basic_angle = getUint32( buf, s3+42, false);
+
+	json.s3.griddef.lat_of_first_point = getUint32( buf, s3+46, false); // 緯度方向格子の最初の点 =47600000: 北緯47.6度
+	json.s3.griddef.long_of_first_point = getUint32( buf, s3+50, false); // 緯度方向格子の最初の点 =120000000: 東経120度
+
+	json.s3.griddef.resolution_flag = buf[s3+54]; // 0x30
+
+	json.s3.griddef.lat_of_last_point = getUint32( buf, s3+55, false); // 緯度方向格子の最後の点 =22400000: 北緯22.4度
+	json.s3.griddef.long_of_last_point = getUint32( buf, s3+59, false); // 緯度方向格子の最後の点 =150000000: 東経150度
+
+	json.s3.griddef.i_direct_inc = getUint32( buf, s3+63, false); // i方向の増分 =125000: 0.125度, x軸方向、経度方向
+	json.s3.griddef.j_direct_inc = getUint32( buf, s3+67, false); // j方向の増分 =100000: 0.1度、 y軸方向、緯度方向
+
+	json.s3.griddef.scan_mode = buf[s3+71];
+
+
+	// Section4から7はデータ分繰り返す。
+	var count = 0; // ループ回数
+	while( loop47( json, buf, count) == true ) {
+		count ++;
+	}
+
+	//-------------------------------------
+	// Section 4: Product Definition Section、プロダクト定義節
+	//-------------------------------------
+	var s4 = s3 + json.s3.len;
+	console.log("s4="+s4);
+	json.s4 = {}; // Section 4 の初期化
+	json.s4.len = getUint32( buf, s4+0, false);
+	json.s4.number_of_section = buf[s4+4];
+
+	json.s4.number_of_coord_after_tamplate = getUint16( buf, s4+5, false);
+	json.s4.template_number = getUint16( buf, s4+7, false); // =0: ある時刻のある水平面における予報
+
+	// Template 4.0
+	json.s4.temp40 = {};
+	json.s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+	json.s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+
+	json.s4.temp40.type_of_generating_process = buf[s4+11]; // =2: 予報
+
+	json.s4.temp40.background_generating_process_id = buf[s4+12]; // =31: メソ数値予報
+	json.s4.temp40.anal_or_frcst_id = buf[s4+13]; // =255: 
+
+	json.s4.temp40.hour_of_obs = getUint16( buf, s4+14, false); // =0:
+	json.s4.temp40.min_of_obs = buf[s4+16]; // =50:
+	json.s4.temp40.id_of_unit_of_time = buf[s4+17]; // =1: hour
+	json.s4.temp40.fcst_time = getUint32( buf, s4+18, false); // =36: 
+
+	json.s4.temp40.type_of_first_fixed_surface = buf[s4+22]; // =100: 
+	json.s4.temp40.scale_factor_of_first_fixed_surface = buf[s4+23]; // =130: 130は二進数で10000010、GRIB2では-2を意味する
+	json.s4.temp40.scaled_value_of_first_fixed_surface = getUint32( buf, s4+24, false); // =1000: 
+	json.s4.temp40.type_of_second_fixed_surface = buf[s4+28];
+	json.s4.temp40.scale_factor_of_second_fixed_surface = buf[s4+29];
+	json.s4.temp40.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
+
+
+
+	//-------------------------------------
+	// Section 5: Data Representation Section、資料表現節
+	//-------------------------------------
+	var s5 = s4 + json.s4.len;
+	console.log("s5="+s5);
+	json.s5 = {}; // Section 5 の初期化
+	json.s5.len = getUint32( buf, s5+0, false);
+	json.s5.number_of_section = buf[s5+4];
+
+	json.s5.number_of_data_points = getUint32( buf, s5+5, false);
+	json.s5.template_number = getUint16( buf, s5+9, false); // =0: 
+
+
+	// Template 5.0
+	json.s5.temp50 = {};
+	json.s5.temp50.ref_value = getUint32( buf, s5+11, false); // R
+	json.s5.temp50.bin_scale_factor = getUint16( buf, s5+15, false); // E
+	json.s5.temp50.dec_scale_factor = getUint16( buf, s5+17, false); // D
+	json.s5.temp50.number_of_bits = buf[s5+19];
+	json.s5.temp50.type_of_original_field_value = buf[s5+20];
+
+
+
+
+	//-------------------------------------
+	// Section 6: Bit-Map Section、ビットマップ節
+	//-------------------------------------
+	var s6 = s5 + json.s5.len;
+	console.log("s6="+s6);
+	json.s6 = {}; // Section 6 の初期化
+	json.s6.len = getUint32( buf, s6+0, false);
+	json.s6.number_of_section = buf[s6+4];
+
+	json.s6.bitmap_indicator = buf[s6+5]; // =255: ビットマップを使用せず
+
+
+
+
+	//-------------------------------------
+	// Section 7: Data Section、データ節
+	//-------------------------------------
+	var s7 = s6 + json.s6.len;
+	console.log("s7="+s7);
+	json.s7 = {}; // Section 7 の初期化
+	json.s7.len = getUint32( buf, s7+0, false); // =91465
+	json.s7.number_of_section = buf[s7+4];
+
+
+	// Template 7.0
+	// 単純圧縮された格子点値の列
+
+
+
+	// Section 4から7が繰り返される
+
+
+	//-------------------------------------
+	// Section 8: End Section
+	//-------------------------------------
+	var s8 = s7 + json.s7.len;
+	console.log("s8="+s8);
+	json.s8 = {}; // Section 8 の初期化
+	json.s8.end = String.fromCharCode( buf[s8+0],buf[s8+1],buf[s8+2],buf[s8+3]);
 
 
 
@@ -210,8 +404,7 @@ function grib2_sub(file, result_obj)
 		// JSONのデバッグダンプ
 		//-------------------------------------
 		console.log(json);
-		result_obj.textContent += JSON.stringify(json, null, "\t");
-		result_obj.textContent += ",";
+		result_obj.textContent = JSON.stringify(json, null, "\t");
 
       }
     };
