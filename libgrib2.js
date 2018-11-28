@@ -170,6 +170,11 @@ function loop47( json, buf, index, s4_pointer)
 	json.s47list[index].s7.len = getUint32( buf, s7+0, false); // =91465
 	json.s47list[index].s7.number_of_section = buf[s7+4];
 
+	var buf_start_pointer = s7+5;
+	var len = json.s47list[index].s7.len;
+	result_list = data_decode( buf, buf_start_pointer, len);
+
+	json.s47list[index].s7.result_list = result_list;
 
 	return s7 + json.s47list[index].s7.len; // 次の読み込み開始位置を返す。
 
@@ -439,7 +444,20 @@ function grib2_sub(file, result_obj)
 		// JSONのデバッグダンプ
 		//-------------------------------------
 		console.log(json);
-		result_obj.textContent = JSON.stringify(json, null, "\t");
+
+		// 7節のデータを取得したらめちゃくちゃ重くなったのでコメント化
+		//result_obj.textContent = JSON.stringify(json, null, "\t");
+		result_obj.textContent += "result";
+
+		result_obj.textContent += "json.s47list.length="+json.s47list.length;
+
+		
+		// 全部出すと重いので、184個の各一つ目だけをダンプしていく
+		for(let i = 0; i < json.s47list.length; i++) {
+			var data = json.s47list[i].s7.result_list[9];
+			result_obj.textContent += ", " + data;
+		}
+
 
       }
     };

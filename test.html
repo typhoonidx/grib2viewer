@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script src="datadecode.js" defer="defer"></script>
+<title>TEST</title>
+
+</head>
+<body>
+
+<style>
+  #byte_content {
+    margin: 5px 0;
+    //max-height: 300px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  #byte_range { margin-top: 5px; }
+</style>
+
+
+
+<span class="testButtons">
+  <button>テスト実行</button>
+</span>
+<div id="byte_range"></div>
+<!--
+<div id="byte_content"></div>
+-->
+<textarea id="byte_content" rows="20" cols="100"></textarea><br />
+
+
+<script>
+	function test() {
+		// test code
+		console.log("test() start!");
+
+		var buf_start_pointer = 0; // 開始位置
+		var buf = [ 0xff, 2, 3, 4, 5, 6, 7, 8]; // 7節のデータバッファ
+		var len = 8; // バッファ長さ
+		result_list = data_decode( buf, buf_start_pointer, len);
+
+		
+		for(let i = 0; i < result_list.length; i++) {
+			console.log(result_list[i])
+		}
+		
+	}
+
+		document.querySelector('.testButtons').addEventListener('click', function(evt) {
+			//alert("button clicked!");
+			if (evt.target.tagName.toLowerCase() == 'button') {
+			test();
+		}
+	}, false);
+</script>
+
+</html>
