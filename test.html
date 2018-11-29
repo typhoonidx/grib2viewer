@@ -5,6 +5,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <script src="datadecode.js" defer="defer"></script>
+<script src="canvas.js" defer="defer"></script>
 <title>TEST</title>
 
 </head>
@@ -25,18 +26,24 @@
 <span class="testButtons">
   <button>テスト実行</button>
 </span>
+
 <div id="byte_range"></div>
+
 <!--
 <div id="byte_content"></div>
 -->
+<!--
 <textarea id="byte_content" rows="20" cols="100"></textarea><br />
+-->
+<canvas id="canvassample" width="140" height="140"></canvas>
 
 
 <script>
 	function test() {
+
 		// test code
 		console.log("test() start!");
-
+/*
 		var buf_start_pointer = 0; // 開始位置
 		var buf = [ 0xff, 2, 3, 4, 5, 6, 7, 8]; // 7節のデータバッファ
 		var len = 8; // バッファ長さ
@@ -46,7 +53,10 @@
 		for(let i = 0; i < result_list.length; i++) {
 			console.log(result_list[i])
 		}
-		
+		*/
+
+		draw_canvas();
+
 	}
 
 		document.querySelector('.testButtons').addEventListener('click', function(evt) {

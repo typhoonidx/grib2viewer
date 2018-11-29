@@ -399,10 +399,47 @@ function parse( json, buf)
 }
 
 
+function get_param_string( cat, param)
+{
+	var str = "";
+	if ( cat == 0 ) {
+		str += "温度, ";
+		if ( param == 0 ) {
+			str += "温度K";
+		}
+	}
+	if ( cat == 1 ) {
+		str += "湿度, ";
+		if ( param == 1 ) {
+			str += "相対湿度%";
+		}
+	}
+	if ( cat == 2 ) {
+		str += "運動量, ";
+		if ( param == 2 ) {
+			str += "風のu成分m/s";
+		}
+		if ( param == 3 ) {
+			str += "風のv成分m/s";
+		}
+		if ( param == 8 ) {
+			str += "上昇流鉛直速度（気圧）Pa/s";
+		}
+	}
+	if ( cat == 3 ) {
+		str += "質量, ";
+		if ( param == 5 ) {
+			str += "ポテンシャル高度gpm";
+		}
+	}
+	return str;
+}
+
+
 
 
 // test
-function grib2_sub(file, result_obj)
+function grib2_sub(file, result_obj, canvas_tag)
 {
 	var opt_startByte = 0;
 	var opt_stopByte = 4;
@@ -414,52 +451,71 @@ function grib2_sub(file, result_obj)
 
     // If we use onloadend, we need to check the readyState.
     reader.onloadend = function(evt) {
-      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
-		var data = evt.target.result;
-		var buf = new Uint8Array(data);
+		if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+			var data = evt.target.result;
+			var buf = new Uint8Array(data);
 
 /*
-		len = buf.length;
-		//alert("len="+len);
-		result_obj.textContent = len;
-		result_obj.textContent += ",";
-		
+			len = buf.length;
+			//alert("len="+len);
+			result_obj.textContent = len;
+			result_obj.textContent += ",";
+			
 
-		// 一バイト目:'G'
-		var byte1 = buf[0];
-		result_obj.textContent += byte1;
-		result_obj.textContent += ",";
+			// 一バイト目:'G'
+			var byte1 = buf[0];
+			result_obj.textContent += byte1;
+			result_obj.textContent += ",";
 
-		// 2バイト目:'R'
-		var byte2 = buf[1];
-		result_obj.textContent += byte2;
-		result_obj.textContent += ",";
+			// 2バイト目:'R'
+			var byte2 = buf[1];
+			result_obj.textContent += byte2;
+			result_obj.textContent += ",";
 */
-		var json = {};
+			var json = {};
 
-		parse( json, buf);
+			parse( json, buf);
 	
 
-		//-------------------------------------
-		// JSONのデバッグダンプ
-		//-------------------------------------
-		console.log(json);
+			//-------------------------------------
+			// JSONのデバッグダンプ
+			//-------------------------------------
+			console.log(json);
 
-		// 7節のデータを取得したらめちゃくちゃ重くなったのでコメント化
-		//result_obj.textContent = JSON.stringify(json, null, "\t");
-		result_obj.textContent += "result";
+			// 7節のデータを取得したらめちゃくちゃ重くなったのでコメント化
+			//result_obj.textContent = JSON.stringify(json, null, "\t");
+			//result_obj.textContent += "result";
 
-		result_obj.textContent += "json.s47list.length="+json.s47list.length;
+			result_obj.textContent += "json.s47list.length="+json.s47list.length;
+			result_obj.textContent += "\n";
 
 		
-		// 全部出すと重いので、184個の各一つ目だけをダンプしていく
-		for(let i = 0; i < json.s47list.length; i++) {
-			var data = json.s47list[i].s7.result_list[9];
-			result_obj.textContent += ", " + data;
+			// 全部出すと重いので、184個の各一つ目だけをダンプしていく
+			for(let index = 0; index < json.s47list.length; index++) {
+
+				result_obj.textContent += json.s47list[index].s4.temp40.parameter_category + ", ";
+				result_obj.textContent += json.s47list[index].s4.temp40.parameter_number + ", ";
+
+				var str = get_param_string(
+					json.s47list[index].s4.temp40.parameter_category,
+					json.s47list[index].s4.temp40.parameter_number);
+				result_obj.textContent += str + ", ";
+
+
+				result_obj.textContent += json.s47list[index].s4.temp40.scaled_value_of_first_fixed_surface;
+
+
+
+				result_obj.textContent += "\n";
+
+				
+			}
+/*
+	json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+	json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+*/
+			drawgrib2(json,canvas_tag);
 		}
-
-
-      }
     };
 
     var blob = file.slice(start, stop + 1);

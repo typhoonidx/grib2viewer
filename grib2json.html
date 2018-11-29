@@ -4,6 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script src="canvas.js" defer="defer"></script>
 <script src="datadecode.js" defer="defer"></script>
 <script src="libgrib2.js" defer="defer"></script>
 <title>GRIB2JSON</title>
@@ -31,7 +32,7 @@ GRIB2ファイルを選択してください
 <div id="byte_content"></div>
 -->
 <textarea id="byte_content" rows="20" cols="100"></textarea><br />
-
+<canvas id="canvassample" width="140" height="140"></canvas>
 
 <script>
   function readBlob(opt_startByte, opt_stopByte) {
@@ -44,11 +45,12 @@ GRIB2ファイルを選択してください
 
     var file = files[0];
 	var obj = document.getElementById('byte_content');
-	result = grib2_sub(file,obj);
+	var canvas_tag = 'canvassample';
+	result = grib2_sub(file,obj,canvas_tag);
   }
   
   document.querySelector('.readBytesButtons').addEventListener('click', function(evt) {
-		//alert("button clicked!");
+	//alert("button clicked!");
     if (evt.target.tagName.toLowerCase() == 'button') {
 		var startByte = 1;
 		var endByte = 4;
