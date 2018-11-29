@@ -95,7 +95,15 @@ function drawgrib2(json,canvas_tag,men)
 	var canvasHeight = json.s3.griddef.number_of_meridian;
 	canvasData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 
+
 	//var men = 2;
+	if ( json.s47list[men] == undefined ) {
+		return;
+	}
+
+	// 一旦全部クリア
+	ctx.clearRect(0, 0, canvas.width, canvas.height);
+
 	var result_list = json.s47list[men].s7.result_list;
 	var width = json.s3.griddef.number_of_parallel;
 	console.log("width="+width);

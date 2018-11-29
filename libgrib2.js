@@ -88,39 +88,91 @@ function loop47( json, buf, index, s4_pointer)
 	json.s47list[index].s4.number_of_section = buf[s4+4];
 
 	json.s47list[index].s4.number_of_coord_after_tamplate = getUint16( buf, s4+5, false);
-	json.s47list[index].s4.template_number = getUint16( buf, s4+7, false); // =0: ある時刻のある水平面における予報
+	json.s47list[index].s4.template_number = getUint16( buf, s4+7, false); 
+		// =0: ある時刻のある水平面における予報、
+		// =8: 連続又は不連続な時間間隔の水平面における統計値
 
-
+/*
 	// debug
-	if ( json.s47list[index].s4.template_number != 0 ) {
+	if ( json.s47list[index].s4.template_number != 0 &&
+		json.s47list[index].s4.template_number != 8) {
 		console.log("json.s47list[index].s4.template_number="+json.s47list[index].s4.template_number);
 		throw new Error('終了します');
 	}
+*/
+
+	if ( json.s47list[index].s4.template_number == 0 ) {
+
+		// Template 4.0
+		json.s47list[index].s4.temp40 = {};
+		json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+		json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+
+		json.s47list[index].s4.temp40.type_of_generating_process = buf[s4+11]; // =2: 予報
+
+		json.s47list[index].s4.temp40.background_generating_process_id = buf[s4+12]; // =31: メソ数値予報
+		json.s47list[index].s4.temp40.anal_or_frcst_id = buf[s4+13]; // =255: 
+
+		json.s47list[index].s4.temp40.hour_of_obs = getUint16( buf, s4+14, false); // =0:
+		json.s47list[index].s4.temp40.min_of_obs = buf[s4+16]; // =50:
+		json.s47list[index].s4.temp40.id_of_unit_of_time = buf[s4+17]; // =1: hour
+		json.s47list[index].s4.temp40.fcst_time = getUint32( buf, s4+18, false); // =36: 
+
+		json.s47list[index].s4.temp40.type_of_first_fixed_surface = buf[s4+22]; // =100: 
+		json.s47list[index].s4.temp40.scale_factor_of_first_fixed_surface = buf[s4+23]; // =130: 130は二進数で10000010、GRIB2では-2を意味する
+		json.s47list[index].s4.temp40.scaled_value_of_first_fixed_surface = getUint32( buf, s4+24, false); // =1000: 
+		json.s47list[index].s4.temp40.type_of_second_fixed_surface = buf[s4+28];
+		json.s47list[index].s4.temp40.scale_factor_of_second_fixed_surface = buf[s4+29];
+		json.s47list[index].s4.temp40.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
+	
+	} else if (json.s47list[index].s4.template_number == 8 ) {
+		// Template 4.8
+		json.s47list[index].s4.temp48 = {};
+		json.s47list[index].s4.temp48.parameter_category = buf[s4+9]; // =3: 質量	
+		json.s47list[index].s4.temp48.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+	
+		json.s47list[index].s4.temp40 = {};
+		json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+		json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
 
 
 
-	// Template 4.0
-	json.s47list[index].s4.temp40 = {};
-	json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
-	json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+		json.s47list[index].s4.temp48.type_of_generating_process = buf[s4+11]; // =2: 予報
 
-	json.s47list[index].s4.temp40.type_of_generating_process = buf[s4+11]; // =2: 予報
+		json.s47list[index].s4.temp48.background_generating_process_id = buf[s4+12]; // =31: メソ数値予報
+		json.s47list[index].s4.temp48.anal_or_frcst_id = buf[s4+13]; // =255: 
 
-	json.s47list[index].s4.temp40.background_generating_process_id = buf[s4+12]; // =31: メソ数値予報
-	json.s47list[index].s4.temp40.anal_or_frcst_id = buf[s4+13]; // =255: 
+		json.s47list[index].s4.temp48.hour_of_obs = getUint16( buf, s4+14, false); // =0:
+		json.s47list[index].s4.temp48.min_of_obs = buf[s4+16]; // =50:
+		json.s47list[index].s4.temp48.id_of_unit_of_time = buf[s4+17]; // =1: hour
+		json.s47list[index].s4.temp48.fcst_time = getUint32( buf, s4+18, false); // =36: 
 
-	json.s47list[index].s4.temp40.hour_of_obs = getUint16( buf, s4+14, false); // =0:
-	json.s47list[index].s4.temp40.min_of_obs = buf[s4+16]; // =50:
-	json.s47list[index].s4.temp40.id_of_unit_of_time = buf[s4+17]; // =1: hour
-	json.s47list[index].s4.temp40.fcst_time = getUint32( buf, s4+18, false); // =36: 
+		json.s47list[index].s4.temp48.type_of_first_fixed_surface = buf[s4+22]; // =100: 
+		json.s47list[index].s4.temp48.scale_factor_of_first_fixed_surface = buf[s4+23]; // =130: 130は二進数で10000010、GRIB2では-2を意味する
+		json.s47list[index].s4.temp48.scaled_value_of_first_fixed_surface = getUint32( buf, s4+24, false); // =1000: 
+		json.s47list[index].s4.temp48.type_of_second_fixed_surface = buf[s4+28];
+		json.s47list[index].s4.temp48.scale_factor_of_second_fixed_surface = buf[s4+29];
+		json.s47list[index].s4.temp48.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
 
-	json.s47list[index].s4.temp40.type_of_first_fixed_surface = buf[s4+22]; // =100: 
-	json.s47list[index].s4.temp40.scale_factor_of_first_fixed_surface = buf[s4+23]; // =130: 130は二進数で10000010、GRIB2では-2を意味する
-	json.s47list[index].s4.temp40.scaled_value_of_first_fixed_surface = getUint32( buf, s4+24, false); // =1000: 
-	json.s47list[index].s4.temp40.type_of_second_fixed_surface = buf[s4+28];
-	json.s47list[index].s4.temp40.scale_factor_of_second_fixed_surface = buf[s4+29];
-	json.s47list[index].s4.temp40.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
+	} else if (json.s47list[index].s4.template_number == 254 ) {
 
+		// Template 4.254
+		json.s47list[index].s4.temp4254 = {};
+		json.s47list[index].s4.temp4254.parameter_category = buf[s4+9]; // =3: 質量	
+		json.s47list[index].s4.temp4254.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+
+		json.s47list[index].s4.temp40 = {};
+		json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+		json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+
+		json.s47list[index].s4.temp4254.number_of_characters = getUint32( buf, s4+11, false);
+
+	} else {
+
+
+		console.log("json.s47list[index].s4.template_number="+json.s47list[index].s4.template_number);
+		//throw new Error('終了します');
+	}
 
 
 	//-------------------------------------
@@ -333,6 +385,10 @@ function parse( json, buf)
 	json.s3.griddef.number_of_parallel = getUint32( buf, s3+30, false); // 緯線に沿った格子点数
 	json.s3.griddef.number_of_meridian = getUint32( buf, s3+34, false); // 経線に沿った格子点数
 
+	console.log("json.s3.griddef.number_of_parallel="+json.s3.griddef.number_of_parallel);
+	console.log("json.s3.griddef.number_of_meridian="+json.s3.griddef.number_of_meridian);
+
+
 	json.s3.griddef.basic_angle = getUint32( buf, s3+38, false);
 	json.s3.griddef.sub_of_basic_angle = getUint32( buf, s3+42, false);
 
@@ -360,6 +416,13 @@ function parse( json, buf)
 	// json.s47list[1]: 2ループ目
 	while( next_pointer = loop47( json, buf, index, next_pointer) ) {
 		console.log("next_pointer="+next_pointer);
+
+		if ( json.s0.len < next_pointer ) {
+			// ERROR
+			// なにかがおかしい
+			break;
+		}
+
 		index ++;
 
 		// 終端チェック
@@ -413,6 +476,9 @@ function get_param_string( cat, param)
 		if ( param == 1 ) {
 			str += "相対湿度%";
 		}
+		if ( param == 8 ) {
+			str += "総降水量kgm-2";
+		}
 	}
 	if ( cat == 2 ) {
 		str += "運動量, ";
@@ -428,8 +494,29 @@ function get_param_string( cat, param)
 	}
 	if ( cat == 3 ) {
 		str += "質量, ";
+		if ( param == 0 ) {
+			str += "気圧Pa";
+		}
+		if ( param == 1 ) {
+			str += "海面更正気圧Pa";
+		}
 		if ( param == 5 ) {
 			str += "ポテンシャル高度gpm";
+		}
+	}
+	if ( cat == 6 ) {
+		str += "雲, ";
+		if ( param == 1 ) {
+			str += "全雲量%";
+		}
+		if ( param == 3 ) {
+			str += "下層雲量%";
+		}
+		if ( param == 4 ) {
+			str += "中層雲量%";
+		}
+		if ( param == 5 ) {
+			str += "上層雲量%";
 		}
 	}
 	return str;
@@ -492,6 +579,10 @@ function grib2_sub(file, result_obj, canvas_tag, men)
 		
 			// 全部出すと重いので、184個の各一つ目だけをダンプしていく
 			for(let index = 0; index < json.s47list.length; index++) {
+				if ( json.s47list[index].s4.temp40 == undefined ) {
+					continue;
+				}
+
 
 				result_obj.textContent += json.s47list[index].s4.temp40.parameter_category + ", ";
 				result_obj.textContent += json.s47list[index].s4.temp40.parameter_number + ", ";
