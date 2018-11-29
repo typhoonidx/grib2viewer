@@ -439,7 +439,7 @@ function get_param_string( cat, param)
 
 
 // test
-function grib2_sub(file, result_obj, canvas_tag)
+function grib2_sub(file, result_obj, canvas_tag, men)
 {
 	var opt_startByte = 0;
 	var opt_stopByte = 4;
@@ -514,7 +514,7 @@ function grib2_sub(file, result_obj, canvas_tag)
 	json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
 	json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
 */
-			drawgrib2(json,canvas_tag);
+			drawgrib2(json,canvas_tag,men);
 		}
     };
 

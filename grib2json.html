@@ -27,12 +27,14 @@ GRIB2ファイルを選択してください
 <span class="readBytesButtons">
   <button>実行</button>
 </span>
+<br/>
+面：<input type="text" id="men" name="men"/>
 <div id="byte_range"></div>
 <!--
 <div id="byte_content"></div>
 -->
 <textarea id="byte_content" rows="20" cols="100"></textarea><br />
-<canvas id="canvassample" width="140" height="140"></canvas>
+<canvas id="canvassample" width="241" height="253"></canvas>
 
 <script>
   function readBlob(opt_startByte, opt_stopByte) {
@@ -44,9 +46,19 @@ GRIB2ファイルを選択してください
     }
 
     var file = files[0];
-	var obj = document.getElementById('byte_content');
+	var result_obj = document.getElementById('byte_content');
 	var canvas_tag = 'canvassample';
-	result = grib2_sub(file,obj,canvas_tag);
+	var men_obj = document.getElementById('men');
+	var men = 0;
+	if ( men_obj != null ) {
+		var text = men_obj.value;
+		console.log("text="+text);
+		if ( text != undefined ) {
+			men = text;
+		}
+	}
+
+	result = grib2_sub(file,result_obj,canvas_tag,men);
   }
   
   document.querySelector('.readBytesButtons').addEventListener('click', function(evt) {

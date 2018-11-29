@@ -1,3 +1,10 @@
+/****************************************************
+canvas.js - GRIB2の画を描くライブラリ
+Copyright 2018, 台風スレ@5ch
+LICENSE: 台風スレ住人であれば誰でも自由に利用ですます。（学術利用）
+作成者：風太郎
+*****************************************************/
+
 var canvasWidth = 0;
 var canvasData = null;
 var ctx = null;
@@ -72,7 +79,7 @@ function draw_canvas()
 
 }
 
-function drawgrib2(json,canvas_tag)
+function drawgrib2(json,canvas_tag,men)
 {
 	var canvas = document.getElementById('canvassample');
 	console.log("canvas="+canvas);
@@ -88,7 +95,7 @@ function drawgrib2(json,canvas_tag)
 	var canvasHeight = json.s3.griddef.number_of_meridian;
 	canvasData = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 
-	var men = 1;
+	//var men = 2;
 	var result_list = json.s47list[men].s7.result_list;
 	var width = json.s3.griddef.number_of_parallel;
 	console.log("width="+width);
@@ -96,22 +103,31 @@ function drawgrib2(json,canvas_tag)
 
 	// まず値のmax値を調べる
 	var max = 0;
+	var min = 1000;
 	for(let index = 0; index < result_list.length; index++) {
 		var value = result_list[index];
 		if ( max < value ) {
 			max = value;
 		}
+		if ( min > value ) {
+			min = value;
+		}
 	}
+
+	var haba = max - min;
 
 	for(let index = 0; index < result_list.length; index++) {
 
 		var value = result_list[index];
 		var x = index % width;
 		var y = Math.floor(index / width);
-		var scale = value / max * 255;
+		var scale = (value + (-1 * min)) / haba * 255;
 	
 		if ( index < 10 ) {
 			console.log(index+","+x+","+y+","+scale);
+		}
+		if ( scale < 0 || scale > 255 ) {
+			console.log("ERROR:scale="+scale);
 		}
 
 		drawPixel(x, y, scale, scale, scale, 255);
