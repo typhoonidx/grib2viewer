@@ -504,6 +504,12 @@ function get_param_string( cat, param)
 			str += "ポテンシャル高度gpm";
 		}
 	}
+	if ( cat == 4 ) {
+		str += "短波放射, ";
+		if ( param == 7 ) {
+			str += "下向き短波放射フラックスWm-w";
+		}
+	}
 	if ( cat == 6 ) {
 		str += "雲, ";
 		if ( param == 1 ) {
@@ -522,7 +528,35 @@ function get_param_string( cat, param)
 	return str;
 }
 
-
+function get_koteimen_string(
+	type_of_first_fixed_surface,
+	scale_factor_of_first_fixed_surface,
+	scaled_value_of_first_fixed_surface)
+{
+	var str_koteimen = "";
+	if ( type_of_first_fixed_surface == 1 ) {
+		str_koteimen = "地面";
+	} else if ( type_of_first_fixed_surface == 101 ) {
+		str_koteimen = "平均海面";
+	} else if ( type_of_first_fixed_surface == 103 ) {
+		if ( scale_factor_of_first_fixed_surface == 0 ) {
+			str_koteimen = "地上10m(風)";
+		} else if ( scale_factor_of_first_fixed_surface == 1 ) {
+			str_koteimen = "地上1.5m(気温,RH)";
+		} else {
+			str_koteimen = type_of_first_fixed_surface + "," + 
+				scale_factor_of_first_fixed_surface + "," + 
+				scaled_value_of_first_fixed_surface;
+		}
+	} else if ( type_of_first_fixed_surface == 100 ) {
+		str_koteimen = scaled_value_of_first_fixed_surface + "hPa";
+	} else {
+			str_koteimen = type_of_first_fixed_surface + "," + 
+				scale_factor_of_first_fixed_surface + "," + 
+				scaled_value_of_first_fixed_surface;
+	}
+	return str_koteimen;
+}
 
 
 // test
@@ -583,6 +617,7 @@ function grib2_sub(file, result_obj, canvas_tag, men)
 					continue;
 				}
 
+				result_obj.textContent += index + ", ";
 
 				result_obj.textContent += json.s47list[index].s4.temp40.parameter_category + ", ";
 				result_obj.textContent += json.s47list[index].s4.temp40.parameter_number + ", ";
@@ -593,7 +628,11 @@ function grib2_sub(file, result_obj, canvas_tag, men)
 				result_obj.textContent += str + ", ";
 
 
-				result_obj.textContent += json.s47list[index].s4.temp40.scaled_value_of_first_fixed_surface;
+				var str_koteimen = get_koteimen_string(
+					json.s47list[index].s4.temp40.type_of_first_fixed_surface,
+					json.s47list[index].s4.temp40.scale_factor_of_first_fixed_surface,
+					json.s47list[index].s4.temp40.scaled_value_of_first_fixed_surface);
+				result_obj.textContent += str_koteimen;
 
 
 

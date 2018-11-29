@@ -4,6 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja" lang="ja">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<script type="text/javascript" src="http://code.jquery.com/jquery-3.3.1.min.js"></script>
 <script src="canvas.js" defer="defer"></script>
 <script src="datadecode.js" defer="defer"></script>
 <script src="libgrib2.js" defer="defer"></script>
@@ -28,15 +29,33 @@ GRIB2ファイルを選択してください
   <button>実行</button>
 </span>
 <br/>
-面：<input type="text" id="men" name="men"/>
+面：<input type="text" id="men" name="men" value="0"/>
 <div id="byte_range"></div>
 <!--
 <div id="byte_content"></div>
 -->
 <textarea id="byte_content" rows="20" cols="100"></textarea><br />
+<div id="status">x,y<br/>color</div>
 <canvas id="canvassample" width="720" height="361"></canvas>
 
 <script>
+function findPos(obj) {
+    var curleft = 0, curtop = 0;
+    if (obj.offsetParent) {
+        do {
+            curleft += obj.offsetLeft;
+            curtop += obj.offsetTop;
+        } while (obj = obj.offsetParent);
+        return { x: curleft, y: curtop };
+    }
+    return undefined;
+}
+
+function rgbToHex(r, g, b) {
+    if (r > 255 || g > 255 || b > 255)
+        throw "Invalid color component";
+    return ((r << 16) | (g << 8) | b).toString(16);
+}
   function readBlob(opt_startByte, opt_stopByte) {
 
     var files = document.getElementById('files').files;
@@ -59,6 +78,18 @@ GRIB2ファイルを選択してください
 	}
 
 	result = grib2_sub(file,result_obj,canvas_tag,men);
+
+	$('#canvassample').mousemove(function(e) {
+		var pos = findPos(this);
+		var x = e.pageX - pos.x;
+		var y = e.pageY - pos.y;
+		var coord = "x=" + x + ", y=" + y;
+		var c = this.getContext('2d');
+		var p = c.getImageData(x, y, 1, 1).data; 
+		var hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);
+		$('#status').html(coord + "<br>" + hex);
+	});
+
   }
   
   document.querySelector('.readBytesButtons').addEventListener('click', function(evt) {
