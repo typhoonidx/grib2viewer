@@ -79,6 +79,31 @@ function draw_canvas()
 
 }
 
+
+function get_color_scaled_value( scale )
+{
+	var r = 0;
+	var g = 0;
+	var b = 0;
+
+/*	
+	var perc = scale * (100.0 / 256.0);
+	if(perc < 50) {
+		r = 255;
+		g = Math.round(5.1 * perc);
+	}
+	else {
+		g = 255;
+		r = Math.round(510 - 5.10 * perc);
+	}
+*/
+	r = scale;
+	g = scale;
+	b = scale;
+
+	return [ r, g, b];
+}
+
 function drawgrib2(json,canvas_tag,men)
 {
 	var canvas = document.getElementById('canvassample');
@@ -110,7 +135,7 @@ function drawgrib2(json,canvas_tag,men)
 	console.log("canvasHeight="+canvasHeight);
 
 	// まず値のmax値を調べる
-	var max = 0;
+	var max = -1000;
 	var min = 1000;
 	for(let index = 0; index < result_list.length; index++) {
 		var value = result_list[index];
@@ -122,15 +147,36 @@ function drawgrib2(json,canvas_tag,men)
 		}
 	}
 
+	console.log("max="+max);
+	console.log("min="+min);
 	var haba = max - min;
 
+	var debug_prevalue = result_list[0];
 	for(let index = 0; index < result_list.length; index++) {
 
 		var value = result_list[index];
+
+		// debug
+		if ( value < 0 ) {
+			var i = value;
+		}
+		// debug
+		if ( debug_prevalue - value > 10 ) {
+			if ( index % 241 != 0 ) {
+				var i = value;
+			}
+		}
+		debug_prevalue = value;
+
+
 		var x = index % width;
 		var y = Math.floor(index / width);
 		var scale = (value + (-1 * min)) / haba * 255;
 	
+		if ( scale > 0x00fe ) {
+			var i = scale;
+		}
+		
 		if ( index < 10 ) {
 			console.log(index+","+x+","+y+","+scale);
 		}
@@ -138,7 +184,9 @@ function drawgrib2(json,canvas_tag,men)
 			console.log("ERROR:scale="+scale);
 		}
 
-		drawPixel(x, y, scale, scale, scale, 255);
+		var [r, g, b] = get_color_scaled_value( scale );
+	
+		drawPixel(x, y, r, g, b, 255);
 	}
 	updateCanvas();
 

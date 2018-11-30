@@ -1,0 +1,37 @@
+<html>
+<head>
+    <title>Learn D3 in 5 minutes</title>
+</head>
+<body>
+
+<h3>Today is a beautiful day!!</h3>
+
+<script src='https://d3js.org/d3.v5.min.js'></script>
+
+<script>
+    d3.select('h3').style('color', 'darkblue');
+    d3.select('h3').style('font-size', '24px');
+</script>
+
+
+<svg width='200' height='500'></svg>
+
+<script>
+var data = [80, 120, 60, 150, 200];
+
+var barHeight = 20;
+
+var bar = d3.select('svg')
+          .selectAll('rect')
+          .data(data)
+          .enter()
+          .append('rect')
+          .attr('width', function(d) {  return d; })
+          .attr('height', barHeight - 1)
+          .attr('transform', function(d, i) {
+            return "translate(0," + i * barHeight + ")";
+          });
+</script>
+
+</body>
+</html>

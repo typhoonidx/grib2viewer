@@ -22,6 +22,28 @@ LICENSE: 台風スレ住人であれば誰でも自由に利用ですます。�
 //サンプルのGRIB2ファイル
 //http://www.jmbsc.or.jp/jp/online/c-onlineGsample.html#sample399
 
+// 最上位ビットが負のビット
+function getGribValue( orig_value, bits)
+{
+	var mask = 0x7f;
+	if ( bits == 8 ) {
+		mask = 0x7f;
+	} else if ( bits == 16 ) {
+		mask = 0x7fff;
+	} else if ( bits == 32 ) {
+		mask = 0x7fffffff;
+	}
+
+	var tmp = orig_value & mask;
+	var result_value = orig_value;
+	if ( tmp == orig_value ) {
+		result_value = orig_value;
+	} else {
+		result_value = -1 * tmp;
+	}
+	return result_value;
+}
+
 function getUint64(bytes, littleEndian)
 {
 	var low = 4, high = 0;
@@ -50,6 +72,13 @@ function getUint32( buf, start, littleEndian)
 	var bytes = [buf[start], buf[start+1], buf[start+2], buf[start+3]];
 	var dv = new DataView(Uint8Array.from(bytes ).buffer);
 	var value= dv.getUint32(0, littleEndian);
+	return value;
+}
+function getFloat32( buf, start, littleEndian)
+{
+	var bytes = [buf[start], buf[start+1], buf[start+2], buf[start+3]];
+	var dv = new DataView(Uint8Array.from(bytes ).buffer);
+	var value= dv.getFloat32(0, littleEndian);
 	return value;
 }
 function getUint64( buf, start, littleEndian)
@@ -124,8 +153,13 @@ function loop47( json, buf, index, s4_pointer)
 		json.s47list[index].s4.temp40.type_of_second_fixed_surface = buf[s4+28];
 		json.s47list[index].s4.temp40.scale_factor_of_second_fixed_surface = buf[s4+29];
 		json.s47list[index].s4.temp40.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
-	
-	} else if (json.s47list[index].s4.template_number == 8 ) {
+	} else if ( json.s47list[index].s4.template_number == 1 ) {
+		// Template 4.1
+		json.s47list[index].s4.temp40 = {};
+		json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+		json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
+
+	} else if ( json.s47list[index].s4.template_number == 8 ) {
 		// Template 4.8
 		json.s47list[index].s4.temp48 = {};
 		json.s47list[index].s4.temp48.parameter_category = buf[s4+9]; // =3: 質量	
@@ -153,6 +187,12 @@ function loop47( json, buf, index, s4_pointer)
 		json.s47list[index].s4.temp48.type_of_second_fixed_surface = buf[s4+28];
 		json.s47list[index].s4.temp48.scale_factor_of_second_fixed_surface = buf[s4+29];
 		json.s47list[index].s4.temp48.scaled_value_of_second_fixed_surface = getUint32( buf, s4+30, false); // 
+
+	} else if ( json.s47list[index].s4.template_number == 11 ) {
+		// Template 4.11
+		json.s47list[index].s4.temp40 = {};
+		json.s47list[index].s4.temp40.parameter_category = buf[s4+9]; // =3: 質量	
+		json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
 
 	} else if (json.s47list[index].s4.template_number == 254 ) {
 
@@ -190,13 +230,26 @@ function loop47( json, buf, index, s4_pointer)
 
 	// Template 5.0
 	json.s47list[index].s5.temp50 = {};
-	json.s47list[index].s5.temp50.ref_value = getUint32( buf, s5+11, false); // R
-	json.s47list[index].s5.temp50.bin_scale_factor = getUint16( buf, s5+15, false); // E
-	json.s47list[index].s5.temp50.dec_scale_factor = getUint16( buf, s5+17, false); // D
-	json.s47list[index].s5.temp50.number_of_bits = buf[s5+19];
-	json.s47list[index].s5.temp50.type_of_original_field_value = buf[s5+20];
+	//json.s47list[index].s5.temp50.ref_value = getUint32( buf, s5+11, false); // R
+	json.s47list[index].s5.temp50.ref_value = getFloat32( buf, s5+11, false); // R
 
+	// debug
+	if ( json.s47list[index].s5.temp50.ref_value < 0.0 ) {
+		var i = 0;
+	}
 
+	json.s47list[index].s5.temp50.bin_scale_factor = getGribValue(getUint16( buf, s5+15, false), 16); // E
+	json.s47list[index].s5.temp50.dec_scale_factor = getGribValue(getUint16( buf, s5+17, false), 16); // D
+	json.s47list[index].s5.temp50.number_of_bits = buf[s5+19]; // =12: 12bit
+	json.s47list[index].s5.temp50.type_of_original_field_value = buf[s5+20]; // =0: 浮動小数点、=1: 整数	
+
+	// debug
+	if ( json.s47list[index].s5.temp50.number_of_bits != 12 ) {
+		var i = 0;
+	}
+	if ( json.s47list[index].s5.temp50.type_of_original_field_value == 0 ) {
+		var i = 9;
+	}
 
 
 	//-------------------------------------
@@ -224,9 +277,19 @@ function loop47( json, buf, index, s4_pointer)
 
 	var buf_start_pointer = s7+5;
 	var len = json.s47list[index].s7.len;
-	result_list = data_decode( buf, buf_start_pointer, len);
+
+/*
+	json.s47list[index].s5.temp50.ref_value = getUint32( buf, s5+11, false); // R
+	json.s47list[index].s5.temp50.bin_scale_factor = getUint16( buf, s5+15, false); // E
+	json.s47list[index].s5.temp50.dec_scale_factor = getUint16( buf, s5+17, false); // D
+*/
+	var R = json.s47list[index].s5.temp50.ref_value;
+	var E = json.s47list[index].s5.temp50.bin_scale_factor;
+	var D = json.s47list[index].s5.temp50.dec_scale_factor;
+	[orig_byte_list, result_list] = data_decode( buf, buf_start_pointer, len, R, E, D);
 
 	json.s47list[index].s7.result_list = result_list;
+	json.s47list[index].s7.orig_byte_list = orig_byte_list;
 
 	return s7 + json.s47list[index].s7.len; // 次の読み込み開始位置を返す。
 
@@ -340,7 +403,7 @@ function parse( json, buf)
 	json.s1.second = buf[s1+18];
 
 	json.s1.production_status = buf[s1+19]; // =0: Operational products
-	json.s1.type = buf[s1+20]; // =1: Forecast products
+	json.s1.type = buf[s1+20]; // =1: Forecast products, =5: Control and Perturbed Forecast Products
 
 
 
@@ -371,7 +434,7 @@ function parse( json, buf)
 	json.s3.number_of_section = buf[s3+4];
 
 	json.s3.src_of_griddef = buf[s3+5];
-	json.s3.num_of_data_points = getUint32( buf, s3+6, false); // =60973: 253×241
+	json.s3.num_of_data_points = getUint32( buf, s3+6, false); // =60973: 253×241, =2920: 73x40
 	json.s3.octet11 = buf[s3+10];
 	json.s3.octet12 = buf[s3+11];
 	json.s3.template_number = getUint16( buf, s3+12, false);
@@ -645,6 +708,24 @@ function grib2_sub(file, result_obj, canvas_tag, men)
 	json.s47list[index].s4.temp40.parameter_number = buf[s4+10]; // =5: ジオポテンシャル高度 gpm
 */
 			drawgrib2(json,canvas_tag,men);
+
+
+			$('#canvassample').mousemove(function(e) {
+				var pos = findPos(this);
+				var x = e.pageX - pos.x;
+				var y = e.pageY - pos.y;
+				var coord = "x=" + x + ", y=" + y;
+				var c = this.getContext('2d');
+				var p = c.getImageData(x, y, 1, 1).data; 
+				var hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);
+				var result_list = json.s47list[men].s7.result_list;
+				var orig_byte_list = json.s47list[men].s7.orig_byte_list;
+				var value = result_list[x+y*241];
+				var orig = orig_byte_list[x+y*241];
+				$('#status').html(coord + "<br>" + hex + "<br>" + value + "<br>" + orig);
+			});
+
+
 		}
     };
 

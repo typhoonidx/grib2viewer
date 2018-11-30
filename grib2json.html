@@ -64,7 +64,23 @@ function rgbToHex(r, g, b) {
       return;
     }
 
+	// debug
+	{
+		var a = Math.pow ( 10, -2);
+		var i = 0;
+	}
+
+
     var file = files[0];
+
+	// アンサンブルを読み込むと重すぎてブラウザが落ちるので、ここではじいておく
+	var index = file.name.indexOf("EPSW");
+	if ( index != -1 ) {
+		alert("アンサンブル(EPSW)は未サポートです。");
+		return;
+	}
+
+
 	var result_obj = document.getElementById('byte_content');
 	var canvas_tag = 'canvassample';
 	var men_obj = document.getElementById('men');
@@ -79,16 +95,7 @@ function rgbToHex(r, g, b) {
 
 	result = grib2_sub(file,result_obj,canvas_tag,men);
 
-	$('#canvassample').mousemove(function(e) {
-		var pos = findPos(this);
-		var x = e.pageX - pos.x;
-		var y = e.pageY - pos.y;
-		var coord = "x=" + x + ", y=" + y;
-		var c = this.getContext('2d');
-		var p = c.getImageData(x, y, 1, 1).data; 
-		var hex = "#" + ("000000" + rgbToHex(p[0], p[1], p[2])).slice(-6);
-		$('#status').html(coord + "<br>" + hex);
-	});
+
 
   }
   

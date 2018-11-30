@@ -20,14 +20,29 @@ class Rectangle {
   }
 }
 
+// result_byteをresult_valueに変換する
+// Y=(R+Xx2^E)/10^D
+// ここで、X=result_byteである。
+function byte2value( result_byte, R, E, D)
+{
+	var Y = 0.0;
 
-function data_decode( buf, buf_start_pointer, len)
+	var tmp1 = Math.pow( 2, E);
+	var tmp2 = Math.pow( 10, D);
+
+	Y = (R + (result_byte * tmp1)) / tmp2;
+
+	return Y;
+}
+
+function data_decode( buf, buf_start_pointer, len, R, E, D)
 {
 	var p = buf_start_pointer;
 	var index = 0;
 	var v = 0; // 記憶ボックス
 	var vbits = 0; // vの有効なビット数
 	var result_list = [];
+	var orig_byte_list = [];
 	var result_index = 0;
 	while( index < len ) {
 		var current_byte = buf[buf_start_pointer+index];
@@ -44,6 +59,7 @@ function data_decode( buf, buf_start_pointer, len)
 			result_byte_pre = v | bit4;
 
 			// マイナス判定
+/*
 			tmp = result_byte_pre & 0x07ff;
 			if ( tmp == result_byte_pre ) {
 				// 値が同じということは上位マイナスフラグが立っていなかったということで、
@@ -54,7 +70,25 @@ function data_decode( buf, buf_start_pointer, len)
 				// この値はマイナスであると判断できる。
 				result_byte = tmp * -1;
 			}
-			result_list[result_index] = result_byte;
+*/
+/*
+			if ( result_byte_pre & 0x800 ) {
+				result_byte = (result_byte_pre & 0x7ff) * -1;
+			} else {
+				result_byte = result_byte_pre;
+			}
+			// debug
+			result_byte = result_byte_pre;
+*/
+
+			// Rが-18.0ぐらいになっている
+			// データ7節は全部正の値になっている
+			// 例の計算式でマイナス値が算出される
+			result_byte = result_byte_pre;
+
+			result_value = byte2value( result_byte, R, E, D);
+			result_list[result_index] = result_value;
+			orig_byte_list[result_index] = result_byte;
 			result_index ++;
 
 			// current_byteの下位4bitをvに格納して次のループに回す	
@@ -70,6 +104,7 @@ function data_decode( buf, buf_start_pointer, len)
 			result_byte_pre = v | bit8;
 
 			// マイナス判定
+/*
 			tmp = result_byte_pre & 0x07ff;
 			if ( tmp == result_byte_pre ) {
 				// 値が同じということは上位マイナスフラグが立っていなかったということで、
@@ -80,7 +115,27 @@ function data_decode( buf, buf_start_pointer, len)
 				// この値はマイナスであると判断できる。
 				result_byte = tmp * -1;
 			}
-			result_list[result_index] = result_byte;
+*/
+/*
+			if ( result_byte_pre & 0x800 ) {
+				result_byte = (result_byte_pre & 0x7ff) * -1;
+			} else {
+				result_byte = result_byte_pre;
+			}
+			// debug
+			result_byte = result_byte_pre;
+*/
+
+			// Rが-18.0ぐらいになっている
+			// データ7節は全部正の値になっている
+			// 例の計算式でマイナス値が算出される
+			result_byte = result_byte_pre;
+
+
+
+			result_value = byte2value( result_byte, R, E, D);
+			result_list[result_index] = result_value;
+			orig_byte_list[result_index] = result_byte;
 			result_index ++;
 
 			// 次のループに回す	
@@ -94,6 +149,6 @@ function data_decode( buf, buf_start_pointer, len)
 		index ++;
 	}
 	console.log("result_index="+result_index);
-	return result_list;
+	return [ orig_byte_list, result_list];
 }
 
