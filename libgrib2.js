@@ -340,6 +340,10 @@ function parse( json, buf)
 
 	json.s0 = {};
 	json.s0.grib_magicword = String.fromCharCode( buf[0],buf[1],buf[2],buf[3]);
+	if ( json.s0.grib_magicword != "GRIB" ) {
+		console.log("GIRBファイルではありません");
+		return -1;
+	}
 	json.s0.discipline = buf[6]; // =0: Meteorological products
 	json.s0.grib_edition_number = buf[7]; // ==2
 
@@ -521,7 +525,7 @@ function parse( json, buf)
 	json.s8.end = String.fromCharCode( buf[s8+0],buf[s8+1],buf[s8+2],buf[s8+3]);
 
 
-
+	return 0;
 }
 
 
@@ -658,8 +662,10 @@ function grib2_sub(file, result_obj, canvas_tag, men)
 */
 			var json = {};
 
-			parse( json, buf);
-	
+			ret = parse( json, buf);
+			if ( ret != 0 ) {
+				return ret;
+			}
 
 			//-------------------------------------
 			// JSONのデバッグダンプ
@@ -669,6 +675,9 @@ function grib2_sub(file, result_obj, canvas_tag, men)
 			// 7節のデータを取得したらめちゃくちゃ重くなったのでコメント化
 			//result_obj.textContent = JSON.stringify(json, null, "\t");
 			//result_obj.textContent += "result";
+
+
+			result_obj.textContent = "";
 
 			result_obj.textContent += "json.s47list.length="+json.s47list.length;
 			result_obj.textContent += "\n";
